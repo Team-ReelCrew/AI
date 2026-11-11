@@ -1,0 +1,10 @@
+[project]
+name = "reelcrew-ai"
+version = "0.1.0"
+description = "ReelCrew AI backend for SNS content production"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]",
+    "pydantic",
+]
