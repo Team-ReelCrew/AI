@@ -54,3 +54,67 @@ Spring이 제작 작업 ID를 발급하고, FastAPI에 내부 HTTP API로 요청
 4. 같은 원고와 글자 넘침 조건에서 전체 카드 재제작과 일부 카드 재제작을 비교합니다. 재제작한 카드 수, LLM 호출 수, 처리 시간을 기록합니다.
 
 집중 개발 기준으로 첫 통합 시연에 약 1~2주, 자동 수집·분기·일부 재제작·비교 검증에 추가 1~2주를 예상합니다. 독립 팩트체크, 차트, 학교 GPU 실험, 영상 제작은 후속 범위로 둡니다.
+
+## 컨벤션
+
+<details>
+
+<summary>코드 컨벤션</summary>
+
+### 네이밍과 모듈 구조
+
+- Python 모듈, 함수, 변수는 `snake_case`, 클래스는 `PascalCase`, 상수는 `UPPER_SNAKE_CASE`로 작성합니다.
+- 이름에는 역할을 드러내는 단어를 사용합니다. 예를 들어 작업 조회 함수는 `get_job`, 요청 모델은 `JobRequest`로 작성합니다.
+- `app/main.py`에서 FastAPI 앱과 라우터를 연결합니다. `app/api/routes/`는 HTTP 요청·응답을 처리하고, `app/services/`는 작업 상태 관리와 제작 로직을 담당합니다. 요청·응답용 Pydantic 모델은 `app/schemas/`에 둡니다.
+- API 입출력과 서비스 함수의 인자·반환값에 타입을 명시합니다.
+- 의존성을 변경할 때는 `uv add` 또는 `uv remove`를 사용하고, `pyproject.toml`과 `uv.lock`의 변경을 함께 커밋합니다.
+
+### Spring–AI API
+
+- Spring 연동 API는 `/api/v1/internal/` 아래에 둡니다. 여러 단어로 된 경로는 `/api/v1/internal/sample-cards`처럼 하이픈으로 연결합니다.
+- Python 모델 필드는 `job_id`처럼 `snake_case`로 작성하고, Pydantic 별칭으로 JSON 계약의 `jobId`를 유지합니다.
+- 제작 작업 API는 `ApiResponse[T]`를 사용합니다. 공통 응답 필드는 `isSuccess`, `code`, `message`, `result`, `error`입니다. API 오류는 HTTP 상태 코드와 오류 코드를 함께 반환하고, 제작 작업 자체의 실패는 조회 응답의 `result.status`와 `result.failure`에 담습니다.
+- 요청·응답 필드, 상태 코드 또는 오류 코드를 변경할 때는 BE 담당자와 확인하고 문서와 JSON 예시도 함께 갱신합니다. [Spring–AI API 계약 초안](docs/spring-ai-api-contract.md)
+
+</details>
+
+<details>
+
+<summary>Git·이슈·PR 컨벤션</summary>
+
+### 브랜치
+
+- `develop`은 기본 브랜치이자 개발 통합 브랜치입니다. 이슈를 먼저 만든 뒤 최신 `develop`에서 작업 브랜치를 만들고, `develop`으로 PR을 엽니다.
+- `main`은 배포용 브랜치입니다. 배포할 때는 `develop`에서 `main`으로 PR을 열어 병합합니다. `main`에 직접 푸시하지 않습니다.
+- 작업 브랜치는 `타입/#이슈번호-설명` 형식을 사용합니다. 설명은 영문 소문자와 하이픈으로 작성하고, 명령어에서는 `#`이 들어간 브랜치명을 따옴표로 감쌉니다.
+
+```bash
+git switch -c 'feature/#12-card-renderer'
+```
+
+### 작업 유형
+
+| 이슈·PR 제목 | 커밋 유형 | 브랜치 접두사 | 용도 |
+| --- | --- | --- | --- |
+| `FEAT` | `feat` | `feature` | 기능 추가 |
+| `FIX` | `fix` | `fix` | 오류 수정 |
+| `REFACTOR` | `refactor` | `refactor` | 동작을 유지하는 코드 개선 |
+| `TEST` | `test` | `test` | 테스트 추가·수정 |
+| `DOCS` | `docs` | `docs` | 문서 추가·수정 |
+| `CHORE` | `chore` | `chore` | 설정 및 기타 작업 |
+| `BUILD` | `build` | `build` | 빌드 설정과 의존성 변경 |
+
+### 이슈·커밋·PR
+
+| 항목 | 형식 | 예시 |
+| --- | --- | --- |
+| 이슈 제목 | `[TYPE] 작업 내용` | `[FEAT] 카드 이미지 렌더러 구현` |
+| 커밋 메시지 | `type: 작업 내용 (#이슈번호)` | `feat: 카드 이미지 렌더러 구현 (#12)` |
+| 작업 PR 제목 | `[TYPE] 작업 내용 (#이슈번호)` | `[FEAT] 카드 이미지 렌더러 구현 (#12)` |
+
+- 이슈에는 작업 배경, 상세 내용, 완료 기준을 적습니다. 오류를 보고할 때는 재현 절차와 기대 결과, 실제 결과를 포함합니다. [이슈 템플릿](.github/ISSUE_TEMPLATE/issue-template.md)
+- 커밋 하나에는 하나의 목적을 담습니다. 메시지는 변경 내용을 짧게 적고 끝에 마침표를 붙이지 않습니다.
+- PR에는 변경 이유, 주요 변경 사항, 검증 방법과 결과를 적습니다. 카드 이미지나 API 응답이 바뀌면 리뷰에 필요한 예시를 첨부합니다. [PR 템플릿](.github/pull_request_template.md)
+- `develop`에 병합하면 완료되는 이슈는 PR 본문에 `Closes #12`처럼 적습니다. 후속 작업이 필요한 이슈는 `#12`처럼 번호를 참조합니다. [GitHub의 이슈 연결 규칙](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)
+
+</details>
