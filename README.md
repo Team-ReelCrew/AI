@@ -46,6 +46,16 @@ Spring이 제작 작업 ID를 발급하고, FastAPI에 내부 HTTP API로 요청
 
 샘플 API 연동과 그래프 상태 설계는 API 계약을 정한 뒤 병행할 수 있습니다. 원고 생성과 렌더러는 공통 카드 명세를 바탕으로 각각 구현한 뒤 그래프에서 연결합니다.
 
+#### 예제 원고 렌더링
+
+아래 명령으로 [고정 경제 자료와 예제 원고](examples/economy-brief-v1.json)를 검증하고 `economy-brief-v1` 템플릿으로 렌더링합니다.
+
+```bash
+uv run --locked python -m app.services.card_renderer examples/economy-brief-v1.json
+```
+
+명령이 출력한 임시 디렉터리에 `card-01.jpg`부터 `card-05.jpg`까지 1080×1350 이미지가 생성됩니다. 제목이나 본문이 지정 영역을 넘으면 오류에 카드 ID와 영역이 표시됩니다. 한글 렌더링에는 [Pretendard v1.3.9](https://github.com/orioncactus/pretendard/releases/tag/v1.3.9)를 사용하며 [폰트 라이선스](app/assets/fonts/OFL-Pretendard.txt)를 함께 제공합니다.
+
 ### 자동 수집과 재실행
 
 1. 경제 RSS 피드 한 곳을 연결합니다. 기사 목록의 중복을 제거하고, 선정한 기사의 자료를 확보해 기존 제작 그래프에 전달합니다.
