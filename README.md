@@ -63,6 +63,34 @@ uv run --locked python -m app.services.card_renderer examples/economy-brief-v1.j
 3. 글자가 넘친 카드의 문구를 줄이고 해당 카드만 다시 렌더링합니다. 2번 카드에서만 문제가 발생한 입력으로 나머지 카드 이미지가 재사용되는지 확인합니다.
 4. 같은 원고와 글자 넘침 조건에서 전체 카드 재제작과 일부 카드 재제작을 비교합니다. 재제작한 카드 수, LLM 호출 수, 처리 시간을 기록합니다.
 
+#### 경제 RSS 수집
+
+아래 명령으로 기본 피드에서 최근 24시간 기사를 수집해 JSON으로 출력합니다.
+
+```bash
+uv run --locked python -m app.services.feed_collector --hours 24
+```
+
+| 피드 | 용도 |
+| --- | --- |
+| 매일경제 경제, 한국경제 경제 | 주제 후보 탐색(Trend). 제목과 RSS 요약만 사용합니다. |
+| 한국은행 보도자료 | 원고 근거(Research). RSS 요약을 `ResearchSource`의 발췌로 사용합니다. |
+
+피드는 동시에 요청합니다. 정규화한 URL로 중복 기사를 제거하고, 실패한 피드는 `failures`에 남긴 채 나머지 기사를 반환합니다. 연합뉴스 RSS는 저작권 표시에서 AI 활용을 금지하므로 사용하지 않습니다. 테스트는 `uv run --locked pytest`로 실행합니다.
+
+#### 주제 선정 (Trend·Research)
+
+`.env.example`을 `.env`로 복사해 `OPENAI_API_KEY`와 `REELCREW_DEFAULT_MODEL`을 채운 뒤 실행합니다.
+
+```bash
+uv run --locked python -m app.services.topic_discovery
+```
+
+1. Trend: 최근 24시간 뉴스의 ID·매체·제목·요약 일부를 LLM에 보내 주제 묶음과 근거 검색용 키워드를 받습니다. 없는 기사 ID는 버리고, 다룬 매체 수 → 기사 수 → 최신순으로 코드가 후보 순위를 정합니다.
+2. Research: 최근 30일 한국은행 보도자료에서 후보 키워드가 들어 있는 자료를 코드로 찾습니다. 근거가 없으면 다음 후보로 넘어가고, 모든 후보에 근거가 없으면 `INSUFFICIENT_SOURCES`로 끝납니다.
+
+결과의 `llm_calls`에 호출별 모델, 입력·출력·캐시·추론 토큰, 소요 시간이 남습니다. `REELCREW_TREND_MODEL`처럼 에이전트별 모델을 따로 지정할 수 있습니다.
+
 집중 개발 기준으로 첫 통합 시연에 약 1~2주, 자동 수집·분기·일부 재제작·비교 검증에 추가 1~2주를 예상합니다. 독립 팩트체크, 차트, 학교 GPU 실험, 영상 제작은 후속 범위로 둡니다.
 
 ## 컨벤션

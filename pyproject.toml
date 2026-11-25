@@ -6,6 +6,19 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]",
+    "feedparser>=6.0.14",
+    "httpx>=0.28.1",
+    "openai>=3.59.0",
     "pillow>=13.0.0",
     "pydantic",
+    "python-dotenv>=1.2.4",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
